@@ -4,7 +4,7 @@ using namespace std;
 
 int main() {
 	Connection connection;
-	/*wstring IP;
+	wstring IP;
 	int port;
 
 	cout << "Please enter the IP to connect to: " << endl;
@@ -12,8 +12,8 @@ int main() {
 
 	cout << "Please enter the port to connect to: " << endl;
 	cin >> port;
-	*/
-	if (connection.setup()) {
+	
+	if (connection.setup(IP, port)) {
 		cout << "Connection was a success!" << endl;
 	}
 }

@@ -4,12 +4,13 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <atlbase.h>
+#include <string>
 
 #include "Connection.h"
 using namespace std;
 
 
-boolean Connection::setup() {
+bool Connection::setup(const wstring IP, int port) {
     WSADATA wsaData;
     int wsaerr;
     WORD wVersionRequested = MAKEWORD(2, 2);
@@ -33,7 +34,7 @@ boolean Connection::setup() {
 
     sockaddr_in clientService;
     clientService.sin_family = AF_INET;
-    InetPton(AF_INET, _T("127.0.0.1"), &clientService.sin_addr.s_addr);
+    InetPton(AF_INET, IP.c_str(), &clientService.sin_addr.s_addr);
     clientService.sin_port = htons(port);
     if (connect(clientSocket, (SOCKADDR*)&clientService, sizeof(clientService)) == SOCKET_ERROR) {
         cout << "Client: connect() - Failed to connect" << endl;
@@ -47,6 +48,7 @@ boolean Connection::setup() {
 
     char buffer[200];
     cout << "Please enter a message: ";
+    cin.ignore();
     cin.getline(buffer, 200);
     int byteCount = send(clientSocket, buffer, 200, 0);
     if (byteCount > 0) {
