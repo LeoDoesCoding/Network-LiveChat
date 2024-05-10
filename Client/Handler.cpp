@@ -9,11 +9,8 @@ int main() {
 
 	cout << "Please enter the IP to connect to: " << endl;
 	wcin >> IP;
-
-	cout << "Please enter the port to connect to: " << endl;
-	cin >> port;
 	
-	if (connection.setup(IP, port)) {
+	if (connection.setup(IP)) {
 		cout << "Connection was a success!" << endl;
 	}
 }

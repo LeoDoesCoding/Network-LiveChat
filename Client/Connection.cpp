@@ -10,7 +10,7 @@
 using namespace std;
 
 
-bool Connection::setup(const wstring IP, int port) {
+bool Connection::setup(const wstring IP) {
     WSADATA wsaData;
     int wsaerr;
     WORD wVersionRequested = MAKEWORD(2, 2);
