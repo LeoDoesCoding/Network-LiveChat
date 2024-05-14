@@ -131,7 +131,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Handler.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="Connection.cpp" />
   </ItemGroup>
   <ItemGroup>

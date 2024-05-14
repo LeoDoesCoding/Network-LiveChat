@@ -5,6 +5,7 @@
 #include <ws2tcpip.h>
 #include <atlbase.h>
 #include <string>
+#include <thread>
 
 #include "Connection.h"
 using namespace std;
@@ -19,17 +20,16 @@ bool Connection::setup(const wstring IP) {
         cout << "Winsock dll not found." << endl;
         return false;
     } else {
-        cout << "Winsock dll found." << endl;
+        //cout << "Winsock dll found." << endl;
     }
 
     clientSocket = INVALID_SOCKET;
     clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (clientSocket == INVALID_SOCKET) {
         cout << "Error at socket(): " << WSAGetLastError() << endl;
-        WSACleanup();
         return false;
     } else {
-        cout << "Socket() is OK!" << endl;
+        //cout << "Socket() is OK!" << endl;
     }
 
     sockaddr_in clientService;
@@ -38,38 +38,44 @@ bool Connection::setup(const wstring IP) {
     clientService.sin_port = htons(port);
     if (connect(clientSocket, (SOCKADDR*)&clientService, sizeof(clientService)) == SOCKET_ERROR) {
         cout << "Client: connect() - Failed to connect" << endl;
-        WSACleanup();
         return false;
     } else {
-        cout << "Client connect() is OK" << endl;
+        //cout << "Client connect() is OK" << endl;
     }
 
-
-
-    char buffer[200];
-    cout << "Please enter a message: ";
-    cin.ignore();
-    cin.getline(buffer, 200);
-    int byteCount = send(clientSocket, buffer, 200, 0);
-    if (byteCount > 0) {
-        cout << "Message sent." << endl;
-    } else {
-        cout << "There was an issue sending the message." << endl;
-        WSACleanup();
-    }
-
-    //Recieve from sever
-    byteCount = recv(clientSocket, buffer, 200, 0);
-    if (byteCount > 0) {
-        cout << "Server replies: " << buffer << endl;
-    } else {
-        WSACleanup();
-        cout << "Error recieving message." << endl;
-    }
-
-    cout << "Process Complete. Please continue to end connection." << endl;
-    system("pause");
-    WSACleanup();
-    return 0;
+    //Connection setup complete successfully.
+    online = true;
     return true;
+}
+
+
+//Sends message to sever (Called by handler.cpp).
+void Connection::sendMessage(char* message) {
+    int byteCount = send(clientSocket, message, 200, 0);
+    if (byteCount < 0) {
+        cout << "There was an issue sending the message." << endl;
+        end();
+    }
+}
+
+//Recieving message from server.
+void Connection::recieveMessage() {
+    char buffer[200];
+
+    while (online) {
+        int byteCount = recv(clientSocket, buffer, 200, 0);
+        if (byteCount > 0) {
+            cout << "You: " << buffer << endl; //Message as recieved and sent from server
+        } else {
+            end();
+        }
+    }
+}
+
+
+void Connection::end() {
+    online = false;
+    WSACleanup();
+    cout << "Connection ended." << endl;
+    system("pause");
 }

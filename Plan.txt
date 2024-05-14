@@ -1,0 +1,19 @@
+GUI run by client.
+Message writen in main file (GUI for future), sent to server.
+Server sends to all clients to display.
+
+
+
+Connection -> notifies GUI of incoming message (sender, message)
+
+
+Sever -> creates new thread for each new socket.
+
+
+In order to pass the message from Connection to main, pass it as a pointered function (callback)
+
+
+
+Connection:
+ Setup connection
+ Function to send message back (message sent from handler/GUI)

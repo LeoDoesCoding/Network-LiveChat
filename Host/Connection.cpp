@@ -1,10 +1,11 @@
-//Maintains connection to server
+//Maintains connection to client
 
 #include <iostream>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <atlbase.h>
 #include <string>
+#include <thread>
 
 #include "Connection.h"
 using namespace std;
@@ -27,14 +28,13 @@ bool Connection::setup() {
 
 
     //Settup socket
-    SOCKET serverSocket, acceptSocket;
     serverSocket = INVALID_SOCKET;
     serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     //Check socket is setup
     if (serverSocket == INVALID_SOCKET) {
         cout << "Error at socket():" << WSAGetLastError() << endl;
         WSACleanup();
-        return 0;
+        return false;
     } else {
         cout << "Socket() is OK!" << endl;
     }
@@ -47,8 +47,7 @@ bool Connection::setup() {
     if (bind(serverSocket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR) {
         cout << "Bind() failed: " << WSAGetLastError() << endl;
         closesocket(serverSocket);
-        WSACleanup();
-        return 0;
+        return false;
     } else {
         cout << "Bind() OK!" << endl;
     }
@@ -56,7 +55,7 @@ bool Connection::setup() {
     //Setup listening process
     if (listen(serverSocket, 1) == SOCKET_ERROR) {
         cout << "Listen(): Error listening on socket" << WSAGetLastError() << endl;
-        return 0;
+        return false;
     } else {
         cout << "listen() is OK, I am waiting for connections." << endl;
     }
@@ -65,33 +64,41 @@ bool Connection::setup() {
     acceptSocket = accept(serverSocket, NULL, NULL);
     if (acceptSocket == INVALID_SOCKET) {
         cout << "Accept failed: " << WSAGetLastError() << endl;
-        WSACleanup();
-        return -1;
+        return false;
     }
 
-
-    //Recieve message from client
-    char buffer[200];
-    int byteCount = recv(acceptSocket, buffer, 200, 0);
-
-    //Check all bytes are recieved.
-    char confirmBuff[200];
-    if (byteCount > 0) {
-        cout << "Message recieved: " << buffer << endl;
-        strcpy_s(confirmBuff, "Message recieved!");
-        byteCount = send(acceptSocket, confirmBuff, 200, 0);
-
-    } else {
-        strcpy_s(confirmBuff, "Issue getting message :(");
-        byteCount = send(acceptSocket, confirmBuff, 200, 0);
-        WSACleanup();
-        cout << "There was an isuse recieving the message." << endl;
-    }
-
+    cout << "Connection made!" << endl;
 
     //Connection setup complete successfully.
-    cout << "Process Complete. Please continue to end connection." << endl;
-    system("pause");
+    online = true;
+    return true;
+}
+
+
+//Recieving message from client (send it back)
+void Connection::recieveMessage() {
+    char buffer[200];
+
+    while (online) {
+        int byteCount = recv(acceptSocket, buffer, 200, 0);
+        if (byteCount > 0) {
+            if (strcmp(buffer, "end") == 0) {
+                end();
+            } else {
+                cout << "Messaged recieved: " << buffer << endl;
+                byteCount = send(acceptSocket, buffer, 200, 0);
+            }
+        } else {
+            cout << "Error recieving message." << endl;
+            end();
+        }
+    }
+}
+
+
+void Connection::end() {
+    online = false;
     WSACleanup();
-    return 0;
+    cout << "Connection ended." << endl;
+    system("pause");
 }
