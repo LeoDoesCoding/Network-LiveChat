@@ -8,11 +8,12 @@
 
 using namespace std;
 
+//In theory, this can be merged onto Connection.cpp and make its start() the main().
+//For practice, I will stick with this file.
 int main() {
 	Connection connection;
 
-	connection.setup();
-	connection.listenThread.join();
+	connection.start();
 
 	return 0;
 }

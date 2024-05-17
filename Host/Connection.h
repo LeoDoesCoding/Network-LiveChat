@@ -21,12 +21,12 @@ private:
         }
     };
     list<User> users;
+    list<thread> threads;
     mutex usersMutex;
 
-    void listenForClients();
+    bool setup();
     void recieveMessage(User& sender);
 public:
-    bool setup();
+    void start();
     void end();
-    thread listenThread;
 };

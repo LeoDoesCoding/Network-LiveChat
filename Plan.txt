@@ -1,5 +1,5 @@
 TODO:
- - Issue: server is ignoring second(+) client.
+ - Issue: Doesn't handle mutlple users sending messages.
 	A connection seems to be made (ie, when "end" is entered by first client, it ends it for the second) but the second client is never aknowleged by the server. It does not recieve chat nor can enter any.
  - GUI?
 
