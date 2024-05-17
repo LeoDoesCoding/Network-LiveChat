@@ -1,4 +1,6 @@
 # Network-LiveChat
+Establishing sockets code from Nicholas Day. Remaining code is original.
+
 ## Currently present:
  - Server/client connection when both applications are running.
  - Client can send messages to server, which are then sent back.
@@ -7,6 +9,7 @@
  - Connection error checking and feedback.
  
 ## Todo:
- - GUI.
- - Multiple client connections.
+ - Re-structure server code (run connection as static)
+ - Test multiple clients.
+ - Try elimination of client code OR add GUI.
  - Testing.

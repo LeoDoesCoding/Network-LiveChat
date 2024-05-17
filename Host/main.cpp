@@ -11,11 +11,8 @@ using namespace std;
 int main() {
 	Connection connection;
 
-	//If connection is successful, initiate the listening loop
-	if (connection.setup()) {
-		connection.thread_obj = thread(&Connection::recieveMessage, &connection);
-		connection.thread_obj.join();
-	}
+	connection.setup();
+	connection.listenThread.join();
 
 	return 0;
 }

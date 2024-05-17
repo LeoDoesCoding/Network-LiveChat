@@ -1,19 +1,13 @@
-GUI run by client.
-Message writen in main file (GUI for future), sent to server.
-Server sends to all clients to display.
+TODO:
+ - Issue: server is ignoring second(+) client.
+	A connection seems to be made (ie, when "end" is entered by first client, it ends it for the second) but the second client is never aknowleged by the server. It does not recieve chat nor can enter any.
+ - GUI?
 
 
-
-Connection -> notifies GUI of incoming message (sender, message)
-
-
-Sever -> creates new thread for each new socket.
-
-
-In order to pass the message from Connection to main, pass it as a pointered function (callback)
+Multiple users:
+ on recieveMessage: new thread(function for each user. Pass in the socket for each one).
+ When recieve message, send display for each socket user.
+ - When a user enters "end", delete them from the connections list. IF no clients connected, disconnect srever too.
 
 
-
-Connection:
- Setup connection
- Function to send message back (message sent from handler/GUI)
+Remove need for client?? (ie, everythin handled by serve)

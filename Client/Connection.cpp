@@ -65,7 +65,11 @@ void Connection::recieveMessage() {
     while (online) {
         int byteCount = recv(clientSocket, buffer, 200, 0);
         if (byteCount > 0) {
-            cout << "You: " << buffer << endl; //Message as recieved and sent from server
+            if (strcmp(buffer, "end") == 0) {
+                end();
+            } else { //TODO: pass name of sender.
+                cout << "Someone: " << buffer << endl; //Message as recieved and sent from server
+            }
         } else {
             end();
         }
