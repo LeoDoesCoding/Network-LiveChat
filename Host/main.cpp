@@ -15,5 +15,6 @@ int main() {
 
 	connection.start();
 
+	system("pause");
 	return 0;
 }

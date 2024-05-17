@@ -15,6 +15,7 @@ private:
     struct User {
         SOCKET socket;
         string name;
+        thread listen;
         User(SOCKET s, string n) {
             socket = s;
             name = n;

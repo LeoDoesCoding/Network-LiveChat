@@ -2,8 +2,6 @@
 
 #include <iostream>
 #include <winsock2.h>
-#include <ws2tcpip.h>
-#include <atlbase.h>
 #include <string>
 #include <thread>
 
@@ -18,6 +16,8 @@ void Connection::start() {
         cout << "Connection failed." << endl;
         end();
     }
+
+    cout << "-----" << endl;
 
     //Setup listening
     cout << "Listen start: " << endl;
@@ -35,21 +35,18 @@ void Connection::start() {
         acceptSocket = accept(serverSocket, NULL, NULL);
         if (acceptSocket == INVALID_SOCKET) {
             cout << "Accept failed: " << WSAGetLastError() << endl;
-            continue;
         } else {
             usersMutex.lock();
             users.push_back(User(acceptSocket, "USER")); //All users arbuitarily names "USER".
             usersMutex.unlock();
             cout << "New client added." << endl;
-            threads.emplace_back(&Connection::recieveMessage, this, ref(users.back()));
+            users.back().listen = thread(&Connection::recieveMessage, this, std::ref(users.back()));
         }
     }
 }
 
 //Sets up connection in preparation for recieving clients.
 bool Connection::setup() {
-    cout << "Sockets test - SERVER" << endl;
-
     //Settup Winsock
     WSADATA wsaData;
     int wsaerr;
@@ -89,7 +86,7 @@ bool Connection::setup() {
         cout << "Bind() OK!" << endl;
     }
 
-
+    
     //Connection setup complete successfully.
     online = true;
     return true;
@@ -117,36 +114,26 @@ void Connection::recieveMessage(User& sender) {
                 usersMutex.unlock();
                 cout << "Sent message to clients. " << endl;
             }
-        } else {
-            cout << "Error recieving message." << endl;
-            end();
         }
     }
 }
 
 
 void Connection::end() {
-    cout << "Disconnecitng..." << endl;
+    cout << "----\nDisconnecitng..." << endl;
+    online = false;
     //Disconnect all clients
     //NOTE: This is for debugging purposes. In practical application, the server should only disconnect all clients if the server is to disconnect.
-    char buffer[4];
-    strcpy_s(buffer, "end");
-
+    //THERE IS CRASH HERE
     usersMutex.lock();
     for (User& user : users) {
         closesocket(user.socket);
     }
-    for (auto& th : threads) {
-        if (th.joinable()) {
-            th.join();
-        }
-    }
     usersMutex.unlock();
+ 
     cout << "Disconected clients." << endl;
 
     //Dissconect server
-    online = false;
     WSACleanup();
     cout << "Connection ended." << endl;
-    system("pause");
 }

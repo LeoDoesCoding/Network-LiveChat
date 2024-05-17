@@ -9,6 +9,6 @@ Establishing sockets code from Nicholas Day. Remaining code is original.
  - Connection error checking and feedback.
  
 ## Todo:
- - Clean up code a bit.
+ - Clean up client code.
  - Try elimination of client code OR add GUI.
  - Testing.
