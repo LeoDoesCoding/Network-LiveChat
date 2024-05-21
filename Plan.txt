@@ -1,2 +1,2 @@
-ISSUE: Client message has garbage charatcers at beginning.
+ISSUE: Messages of 200+ are sent as multiple messages.
 Next: Remove message clipping.
