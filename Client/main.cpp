@@ -5,6 +5,7 @@ using namespace std;
 
 int main() {
 	Connection connection;
+	char input[201];
 
 	wstring IP;
 	int port;
@@ -22,16 +23,18 @@ int main() {
 		cin.ignore();
 
 		cout << "Enter a message: " << endl;
-		char input[200];
+		//char input[200];
+		
 
 		//Until "end" is entered, send each message to Connection.
 		while (true) {
-			cin.getline(input, 200);
+			cin.getline(input, 200, '\n');
 
 			connection.sendMessage(input);
 			if (strcmp(input, "end") == 0) {
 				break;
 			}
+			cin.clear();
 		}
 	}
 

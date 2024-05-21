@@ -1,5 +1,6 @@
 # Network-LiveChat
 Establishing sockets code from Nicholas Day. Remaining code is original.
+##Recent commit: Handling messages of varied lengths (transfered message clips at 200).
 
 ## Currently present:
  - Establishes server/client(s) connection.
@@ -9,6 +10,7 @@ Establishing sockets code from Nicholas Day. Remaining code is original.
  - Connection error checking and feedback.
  
 ## Todo:
- - Clean up client code.
+ - Fix issue: Client recieved message has charatcers that shoulden't be present (at beginning of message).
+ - Remove message clipping.
  - Try elimination of client code OR add GUI.
  - Testing.

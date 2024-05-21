@@ -52,6 +52,7 @@ bool Connection::setup() {
     int wsaerr;
     WORD wVersionRequested = MAKEWORD(2, 2);
     wsaerr = WSAStartup(wVersionRequested, &wsaData);
+
     //Check if Winsock dll found
     if (wsaerr == 0) {
         cout << "Winsock dll was found." << endl;
@@ -65,6 +66,7 @@ bool Connection::setup() {
     //Settup socket
     serverSocket = INVALID_SOCKET;
     serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
     //Check socket is setup
     if (serverSocket == INVALID_SOCKET) {
         cout << "Error at socket():" << WSAGetLastError() << endl;
@@ -96,10 +98,23 @@ bool Connection::setup() {
 //THREAD: For each client, wait for messages and send to all clients.
 void Connection::recieveMessage(User& sender) {
     cout << "Waiting to recieve from client " << sender.name << "... " << endl;
-    char buffer[200];
+    char buffer[201];
+    char newMsg[220];
+    int byteCount, bytesRecieved;
 
     while (online) {
-        int byteCount = recv(sender.socket, buffer, 200, 0);
+        bytesRecieved = 0;
+
+        //Read data up to 200. Clip rest of data (stand-in).
+        while (bytesRecieved < 200) {
+            byteCount = recv(sender.socket, buffer + bytesRecieved, 200 - bytesRecieved, 0);
+            if (byteCount > 0) {
+                bytesRecieved += byteCount;
+            } else {
+                break;
+            }
+        }
+
         if (byteCount > 0) {
             if (strcmp(buffer, "end") == 0) {
                 end();
@@ -107,12 +122,17 @@ void Connection::recieveMessage(User& sender) {
                 cout << "Messaged recieved from " << sender.name << ": " << buffer << endl;
 
                 //Send to each connected client
+                int msgSize = bytesRecieved + sender.name.length() + 2; //3 for ": " and "/0"
+                char *newMsg = new char[msgSize];
+                snprintf(newMsg, msgSize, "%s: %s", sender.name.c_str(), buffer);
                 usersMutex.lock();
+                cout << "Sending: " << newMsg << endl;
                 for (User& user : users) { //Note: There is no error checking here.
-                    send(user.socket, buffer, 200, 0);
+                    send(user.socket, newMsg, msgSize, 0);
                 }
                 usersMutex.unlock();
                 cout << "Sent message to clients. " << endl;
+                delete [] newMsg;
             }
         }
     }
@@ -124,7 +144,6 @@ void Connection::end() {
     online = false;
     //Disconnect all clients
     //NOTE: This is for debugging purposes. In practical application, the server should only disconnect all clients if the server is to disconnect.
-    //THERE IS CRASH HERE
     usersMutex.lock();
     for (User& user : users) {
         closesocket(user.socket);

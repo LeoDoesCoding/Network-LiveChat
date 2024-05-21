@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #include <string>
 #include <thread>
 
@@ -10,10 +11,13 @@ using namespace std;
 
 
 bool Connection::setup(const wstring IP) {
+    //Settup Winsock
     WSADATA wsaData;
     int wsaerr;
     WORD wVersionRequested = MAKEWORD(2, 2);
     wsaerr = WSAStartup(wVersionRequested, &wsaData);
+
+    //Check if Winsock dll found
     if (wsaerr != 0) {
         cout << "Winsock dll not found." << endl;
         return false;
@@ -21,15 +25,16 @@ bool Connection::setup(const wstring IP) {
         //cout << "Winsock dll found." << endl;
     }
 
+    //Settup socket
     clientSocket = INVALID_SOCKET;
     clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (clientSocket == INVALID_SOCKET) {
         cout << "Error at socket(): " << WSAGetLastError() << endl;
         return false;
-    } else {
-        //cout << "Socket() is OK!" << endl;
     }
 
+
+    //Connect to socket
     sockaddr_in clientService;
     clientService.sin_family = AF_INET;
     InetPton(AF_INET, IP.c_str(), &clientService.sin_addr.s_addr);
@@ -37,8 +42,6 @@ bool Connection::setup(const wstring IP) {
     if (connect(clientSocket, (SOCKADDR*)&clientService, sizeof(clientService)) == SOCKET_ERROR) {
         cout << "Client: connect() - Failed to connect" << endl;
         return false;
-    } else {
-        //cout << "Client connect() is OK" << endl;
     }
 
     //Connection setup complete successfully.
@@ -58,18 +61,29 @@ void Connection::sendMessage(char* message) {
 
 //Recieving message from server.
 void Connection::recieveMessage() {
-    char buffer[200];
+    char buffer[220];
+    int byteCount, bytesRecieved;
 
     while (online) {
-        int byteCount = recv(clientSocket, buffer, 200, 0);
+        bytesRecieved = 0;
+
+        //Read data up to 200. Clip rest of data (stand-in).
+        while (bytesRecieved < 200) {
+            byteCount = recv(clientSocket, buffer + bytesRecieved, 200 - bytesRecieved, 0);
+            if (byteCount > 0) {
+                bytesRecieved += byteCount;
+            } else {
+                break;
+            }
+        }
+
+
         if (byteCount > 0) {
             if (strcmp(buffer, "end") == 0) {
                 end();
-            } else { //TODO: pass name of sender.
-                cout << "Someone: " << buffer << endl; //Message as recieved and sent from server
+            } else {
+                cout << buffer << endl; //Message as recieved and sent from server
             }
-        } else {
-            end();
         }
     }
 }
