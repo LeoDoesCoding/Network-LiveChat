@@ -108,6 +108,7 @@ void Connection::recieveMessage(User& sender) {
         //Read data up to 200. Clip rest of data (stand-in).
         while (bytesRecieved < 200) {
             byteCount = recv(sender.socket, buffer + bytesRecieved, 200 - bytesRecieved, 0);
+            cout << "Recieving.." << endl;
             if (byteCount > 0) {
                 bytesRecieved += byteCount;
             } else {
@@ -122,9 +123,11 @@ void Connection::recieveMessage(User& sender) {
                 cout << "Messaged recieved from " << sender.name << ": " << buffer << endl;
 
                 //Send to each connected client
-                int msgSize = bytesRecieved + sender.name.length() + 2; //3 for ": " and "/0"
+                int msgSize = strlen(buffer) + sender.name.length() + 3; //3 for ": " and "/0"
+                cout << "MSG SIZE: " << msgSize << "BUF SIZE: " << strlen(buffer) << endl;
                 char *newMsg = new char[msgSize];
                 snprintf(newMsg, msgSize, "%s: %s", sender.name.c_str(), buffer);
+
                 usersMutex.lock();
                 cout << "Sending: " << newMsg << endl;
                 for (User& user : users) { //Note: There is no error checking here.

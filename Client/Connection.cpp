@@ -66,24 +66,26 @@ void Connection::recieveMessage() {
 
     while (online) {
         bytesRecieved = 0;
+        //memset(buffer, 0, sizeof(buffer));
 
         //Read data up to 200. Clip rest of data (stand-in).
-        while (bytesRecieved < 200) {
-            byteCount = recv(clientSocket, buffer + bytesRecieved, 200 - bytesRecieved, 0);
-            if (byteCount > 0) {
-                bytesRecieved += byteCount;
-            } else {
-                break;
-            }
+        byteCount = recv(clientSocket, buffer, 200, 0);
+        if (byteCount > 0) {
+            bytesRecieved += byteCount;
+        } else {
+            break;
         }
 
 
         if (byteCount > 0) {
+            cout << "Byte size: " << bytesRecieved << endl;
             if (strcmp(buffer, "end") == 0) {
                 end();
             } else {
                 cout << buffer << endl; //Message as recieved and sent from server
             }
+        } else {
+            cout << "Some werd eeorrr." << endl;
         }
     }
 }
