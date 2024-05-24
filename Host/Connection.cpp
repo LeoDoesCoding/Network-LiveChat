@@ -5,6 +5,7 @@
 #include <string>
 #include <thread>
 
+
 #include "Connection.h"
 using namespace std;
 
@@ -98,44 +99,40 @@ bool Connection::setup() {
 //THREAD: For each client, wait for messages and send to all clients.
 void Connection::recieveMessage(User& sender) {
     cout << "Waiting to recieve from client " << sender.name << "... " << endl;
-    char buffer[201];
-    char newMsg[220];
-    int byteCount, bytesRecieved;
+    char* inMsg;
+    char* outMsg;
+    unsigned short msgSize;
+    int byteCount;
 
     while (online) {
-        bytesRecieved = 0;
+        //Get size of message
+        recv(sender.socket, (char*)&msgSize, sizeof(msgSize), 0); //Note: There is no error checking to see if it is numerical.
+        cout << "Recieved: " << msgSize << endl;
 
-        //Read data up to 200. Clip rest of data (stand-in).
-        while (bytesRecieved < 200) {
-            byteCount = recv(sender.socket, buffer + bytesRecieved, 200 - bytesRecieved, 0);
-            cout << "Recieving.." << endl;
-            if (byteCount > 0) {
-                bytesRecieved += byteCount;
-            } else {
-                break;
-            }
-        }
+        //Recieve full message
+        inMsg = new char[msgSize];
+        byteCount = recv(sender.socket, inMsg, msgSize, 0);
 
         if (byteCount > 0) {
-            if (strcmp(buffer, "end") == 0) {
+            if (strcmp(inMsg, "end") == 0) {
                 end();
             } else {
-                cout << "Messaged recieved from " << sender.name << ": " << buffer << endl;
+                //
+                cout << "Messaged recieved from " << sender.name << ": " << inMsg << endl;
 
                 //Send to each connected client
-                int msgSize = strlen(buffer) + sender.name.length() + 3; //3 for ": " and "/0"
-                cout << "MSG SIZE: " << msgSize << "BUF SIZE: " << strlen(buffer) << endl;
-                char *newMsg = new char[msgSize];
-                snprintf(newMsg, msgSize, "%s: %s", sender.name.c_str(), buffer);
+                msgSize += sender.name.length() + 3; //3 for ": " and "/0"
+                outMsg = new char[msgSize];
+                snprintf(outMsg, msgSize, "%s: %s", sender.name.c_str(), inMsg);
 
                 usersMutex.lock();
-                cout << "Sending: " << newMsg << endl;
                 for (User& user : users) { //Note: There is no error checking here.
-                    send(user.socket, newMsg, msgSize, 0);
+                    send(user.socket, outMsg, msgSize, 0);
                 }
                 usersMutex.unlock();
                 cout << "Sent message to clients. " << endl;
-                delete [] newMsg;
+                delete [] outMsg;
+                delete[] inMsg;
             }
         }
     }

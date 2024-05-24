@@ -51,8 +51,12 @@ bool Connection::setup(const wstring IP) {
 
 
 //Sends message to sever (Called by handler.cpp).
-void Connection::sendMessage(char* message) {
-    int byteCount = send(clientSocket, message, 200, 0);
+void Connection::sendMessage(char* message, unsigned short length) {
+    //Send length
+    send(clientSocket, (char*)&length, sizeof(length), 0);
+
+    //Send message
+    int byteCount = send(clientSocket, message, length, 0);
     if (byteCount < 0) {
         cout << "There was an issue sending the message." << endl;
         end();
@@ -62,11 +66,15 @@ void Connection::sendMessage(char* message) {
 //Recieving message from server.
 void Connection::recieveMessage() {
     char buffer[220];
+    int32_t msgSize;
+    char sizeBuffer[sizeof(msgSize)];
     int byteCount, bytesRecieved;
 
     while (online) {
         bytesRecieved = 0;
-        //memset(buffer, 0, sizeof(buffer));
+
+        //Get size of message
+
 
         //Read data up to 200. Clip rest of data (stand-in).
         byteCount = recv(clientSocket, buffer, 200, 0);
@@ -78,14 +86,11 @@ void Connection::recieveMessage() {
 
 
         if (byteCount > 0) {
-            cout << "Byte size: " << bytesRecieved << endl;
             if (strcmp(buffer, "end") == 0) {
                 end();
             } else {
                 cout << buffer << endl; //Message as recieved and sent from server
             }
-        } else {
-            cout << "Some werd eeorrr." << endl;
         }
     }
 }

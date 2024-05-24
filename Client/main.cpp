@@ -5,7 +5,8 @@ using namespace std;
 
 int main() {
 	Connection connection;
-	char input[201];
+	string inpStr;
+	char* input;
 
 	wstring IP;
 	int port;
@@ -16,25 +17,27 @@ int main() {
 
 	//If connection is successful, initiate the listening loop and allow messages to be sent.
 	if (connection.setup(IP)) {
-		cout << "Connection was a success!" << endl;
+		cout << "You are successfully connected to the server." << endl;
 		connection.thread_obj = thread(&Connection::recieveMessage, &connection);
 
 		//Clear input cache, start listening thread.
 		cin.ignore();
 
-		cout << "Enter a message: " << endl;
-		//char input[200];
-		
+		cout << "Enter a message: " << endl;		
 
 		//Until "end" is entered, send each message to Connection.
 		while (true) {
-			cin.getline(input, 200, '\n');
+			cin >> inpStr;
+			//getline(cin, inpStr);
+			input = new char[inpStr.length()];
+			memcpy(input, inpStr.c_str(), inpStr.length());
 
-			connection.sendMessage(input);
+			connection.sendMessage(input, inpStr.length());
 			if (strcmp(input, "end") == 0) {
 				break;
 			}
 			cin.clear();
+			delete[] input;
 		}
 	}
 

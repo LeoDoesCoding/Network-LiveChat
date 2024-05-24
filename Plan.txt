@@ -1,2 +1,4 @@
-ISSUE: Messages of 200+ are sent as multiple messages.
-Next: Remove message clipping.
+ISSUE: Server recieves client message with additional characters. Suggests they are not sending/recievieng same number of bytes.
+ - This interferes with commands like "end".
+
+Add more commands? Dunno could be fun.

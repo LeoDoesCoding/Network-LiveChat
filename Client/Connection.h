@@ -18,6 +18,6 @@ public:
 
     bool setup(const wstring IP);
     void end();
-    void sendMessage(char* message);
+    void sendMessage(char* message, unsigned short length);
     void recieveMessage();
 };
