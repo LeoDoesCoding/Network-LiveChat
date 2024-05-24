@@ -10,6 +10,4 @@ Establishing sockets code from Nicholas Day. Remaining code is original.
  - Connection error checking and feedback.
  
 ## Todo:
- - Fix issue: Server retrived messager from client with too many bytes (but sends it back just fine).
- - GUI?
  - Testing.

@@ -22,17 +22,18 @@ int main() {
 
 		//Clear input cache, start listening thread.
 		cin.ignore();
-
 		cout << "Enter a message: " << endl;		
 
 		//Until "end" is entered, send each message to Connection.
 		while (true) {
 			cin >> inpStr;
 			//getline(cin, inpStr);
-			input = new char[inpStr.length()];
-			memcpy(input, inpStr.c_str(), inpStr.length());
+			input = new char[inpStr.length()+1]; //+1 for null-terminator
+			strcpy_s(input, inpStr.length() +1, inpStr.c_str());
+			input[inpStr.length() + 1] = '/0';
+			//memcpy(input, inpStr.c_str(), inpStr.length()); //Copies it such that the null-terminator is removed.
 
-			connection.sendMessage(input, inpStr.length());
+			connection.sendMessage(input, inpStr.length()+1);
 			if (strcmp(input, "end") == 0) {
 				break;
 			}

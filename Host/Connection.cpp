@@ -99,15 +99,17 @@ bool Connection::setup() {
 //THREAD: For each client, wait for messages and send to all clients.
 void Connection::recieveMessage(User& sender) {
     cout << "Waiting to recieve from client " << sender.name << "... " << endl;
-    char* inMsg;
+    char* inMsg = nullptr;
     char* outMsg;
     unsigned short msgSize;
     int byteCount;
 
     while (online) {
+
+        char* inMsg = nullptr;
         //Get size of message
         recv(sender.socket, (char*)&msgSize, sizeof(msgSize), 0); //Note: There is no error checking to see if it is numerical.
-        cout << "Recieved: " << msgSize << endl;
+        cout << "Recieved: " << msgSize << "." << endl;
 
         //Recieve full message
         inMsg = new char[msgSize];
@@ -117,7 +119,6 @@ void Connection::recieveMessage(User& sender) {
             if (strcmp(inMsg, "end") == 0) {
                 end();
             } else {
-                //
                 cout << "Messaged recieved from " << sender.name << ": " << inMsg << endl;
 
                 //Send to each connected client

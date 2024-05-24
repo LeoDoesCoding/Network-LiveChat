@@ -1,4 +1,3 @@
-ISSUE: Server recieves client message with additional characters. Suggests they are not sending/recievieng same number of bytes.
- - This interferes with commands like "end".
+ISSUE: None :) ...that I know of.
 
 Add more commands? Dunno could be fun.
