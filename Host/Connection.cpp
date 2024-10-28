@@ -1,50 +1,50 @@
 //Maintains connection to client
-
-#include <iostream>
-#include <winsock2.h>
-#include <string>
-#include <thread>
-
-
 #include "Connection.h"
 using namespace std;
 
-void Connection::start() {
+void Connection::start(function<void(string)> callback) {
+    toManager = callback;
+
     //Setup connection
-    if (setup()) {
-        cout << "Connection successful." << endl;
+    if(setup()) {
+        toManager("Connection successful.");
     } else {
-        cout << "Connection failed." << endl;
+        toManager("Connection failed.");
         end();
     }
 
-    cout << "-----" << endl;
+    thread host(&Connection::hostMessanger, this);
+
+    toManager("-----");
 
     //Setup listening
-    cout << "Listen start: " << endl;
-    if (listen(serverSocket, 1) == SOCKET_ERROR) {
-        cout << "Listen(): Error listening on socket" << WSAGetLastError() << endl;
+    toManager("Listen start: ");
+    if(listen(serverSocket, 1) == SOCKET_ERROR) {
+        toManager("Listen(): Error listening on socket");
         end();
     } else {
-        cout << "listen() is OK." << endl;
+        toManager("listen() is OK.");
     }
 
     //Listen for clients
-    while (online) {
+    while(online) {
         //Wait until a connection is made, attempt request acceptence.
-        cout << "Listening for a new connection..." << endl;
+        toManager("Listening for a new connection...");
         acceptSocket = accept(serverSocket, NULL, NULL);
-        if (acceptSocket == INVALID_SOCKET) {
-            cout << "Accept failed: " << WSAGetLastError() << endl;
+        if(acceptSocket == INVALID_SOCKET) {
+            toManager("Accept failed: " + WSAGetLastError());
         } else {
             usersMutex.lock();
-            users.push_back(User(acceptSocket, "USER")); //All users arbuitarily names "USER".
+            users.push_back(User(acceptSocket)); //All users arbuitarily names "USER".
             usersMutex.unlock();
-            cout << "New client added." << endl;
+            toManager("New client added.");
             users.back().listen = thread(&Connection::recieveMessage, this, std::ref(users.back()));
         }
     }
+    host.join();
 }
+
+//Note: Host is present in chat, however does not have their own User struct (no connection to own port).
 
 //Sets up connection in preparation for recieving clients.
 bool Connection::setup() {
@@ -55,25 +55,24 @@ bool Connection::setup() {
     wsaerr = WSAStartup(wVersionRequested, &wsaData);
 
     //Check if Winsock dll found
-    if (wsaerr == 0) {
-        cout << "Winsock dll was found." << endl;
-        cout << "Status: " << wsaData.szSystemStatus << endl;
+    if(wsaerr == 0) {
+        toManager("Winsock dll was found.");
+        toManager("Status: " + string(wsaData.szSystemStatus));
     } else {
-        cout << "The Winsock dll not found." << endl;
+        toManager("The Winsock dll not found.");
         return false;
     }
-
 
     //Settup socket
     serverSocket = INVALID_SOCKET;
     serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     //Check socket is setup
-    if (serverSocket == INVALID_SOCKET) {
-        cout << "Error at socket():" << WSAGetLastError() << endl;
+    if(serverSocket == INVALID_SOCKET) {
+        toManager("Error at socket()");
         return false;
     } else {
-        cout << "Socket() is OK!" << endl;
+        toManager("Socket() is OK!");
     }
 
     //Bind socket to IP and port.
@@ -81,63 +80,89 @@ bool Connection::setup() {
     service.sin_family = AF_INET;
     service.sin_addr.s_addr = INADDR_ANY;
     service.sin_port = htons(port);
-    if (bind(serverSocket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR) {
-        cout << "Bind() failed: " << WSAGetLastError() << endl;
+    if(::bind(serverSocket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR) {
+        toManager("Bind() failed: ");
         closesocket(serverSocket);
         return false;
     } else {
-        cout << "Bind() OK!" << endl;
+        toManager("Bind() OK!");
     }
 
-    
     //Connection setup complete successfully.
     online = true;
     return true;
+}
+
+//THREAD: Host messaging
+void Connection::hostMessanger() {
+    string inpStr;
+    char* input;
+    int bufferSize;
+
+    while(online) {
+        getline(cin, inpStr);
+
+        if(cin.fail()) {
+            cerr << "Input error. Exiting." << endl;
+            break;
+        }
+
+        if(inpStr == "end") {
+            break;
+        }
+
+        bufferSize = inpStr.length() + strlen(name) + 3;
+        input = new char[bufferSize];
+        snprintf(input, bufferSize, "%s: %s", name, inpStr.c_str());
+
+        sendMessage(input);
+    }
 }
 
 
 //THREAD: For each client, wait for messages and send to all clients.
 void Connection::recieveMessage(User& sender) {
     cout << "Waiting to recieve from client " << sender.name << "... " << endl;
-    char* inMsg = nullptr;
-    char* outMsg;
+    char* msg;
+    char* msgwName;
     unsigned short msgSize;
     int byteCount;
 
-    while (online) {
-
-        char* inMsg = nullptr;
+    while(online) {
         //Get size of message
         recv(sender.socket, (char*)&msgSize, sizeof(msgSize), 0); //Note: There is no error checking to see if it is numerical.
-        cout << "Recieved: " << msgSize << "." << endl;
 
         //Recieve full message
-        inMsg = new char[msgSize];
-        byteCount = recv(sender.socket, inMsg, msgSize, 0);
+        msg = new char[msgSize];
+        byteCount = recv(sender.socket, msg, msgSize, 0);
 
-        if (byteCount > 0) {
-            if (strcmp(inMsg, "end") == 0) {
+        if(byteCount > 0) {
+            if(strcmp(msg, "end") == 0) {
                 end();
             } else {
-                cout << "Messaged recieved from " << sender.name << ": " << inMsg << endl;
+                cout << msg << endl;
+                msgSize += strlen(sender.name) + 2;
+                msgwName = new char[msgSize];
+                snprintf(msgwName, msgSize, "%s: %s", sender.name, msg);
+                toManager(msgwName); //CALLBACK
 
-                //Send to each connected client
-                msgSize += sender.name.length() + 3; //3 for ": " and "/0"
-                outMsg = new char[msgSize];
-                snprintf(outMsg, msgSize, "%s: %s", sender.name.c_str(), inMsg);
-
-                usersMutex.lock();
-                for (User& user : users) { //Note: There is no error checking here.
-                    send(user.socket, outMsg, msgSize, 0);
-                }
-                usersMutex.unlock();
-                cout << "Sent message to clients. " << endl;
-                delete [] outMsg;
-                delete[] inMsg;
+                sendMessage(msgwName);
+                toManager("Sent message to clients.");
+                delete[] msg;
             }
         }
     }
 }
+
+void Connection::sendMessage(char* message) {
+    usersMutex.lock();
+    for(User& user : users) { //Note: There is no error checking here.
+        send(user.socket, message, strlen(message) + 1, 0);
+    }
+    usersMutex.unlock();
+    delete[] message;
+}
+
 
 
 void Connection::end() {
@@ -146,11 +171,11 @@ void Connection::end() {
     //Disconnect all clients
     //NOTE: This is for debugging purposes. In practical application, the server should only disconnect all clients if the server is to disconnect.
     usersMutex.lock();
-    for (User& user : users) {
+    for(User& user : users) {
         closesocket(user.socket);
     }
     usersMutex.unlock();
- 
+
     cout << "Disconected clients." << endl;
 
     //Dissconect server

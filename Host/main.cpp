@@ -4,16 +4,22 @@
 #include <atlbase.h>
 #include <thread>
 
-#include "Connection.h"
+#include "Manager.h"
 
 using namespace std;
 
-//In theory, this can be merged onto Connection.cpp and make its start() the main().
-//For practice, I will stick with this file.
 int main() {
-	Connection connection;
+	/*int choice;
 
-	connection.start();
+	cout << "Enter the number for the choice you want: \n1. Create server\n2. Join room" << endl;
+	cin >> choice;
+
+	while(cin.fail() || (choice != 1 && choice != 2)) {
+		cout << "Invalid choice, please enter a corresponding number to the options provided:  " << endl;
+		cin >> choice;
+	}*/
+
+	Manager::start(1);
 
 	system("pause");
 	return 0;

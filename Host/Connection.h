@@ -1,8 +1,11 @@
+#pragma once
 #include <iostream>
 #include <winsock2.h>
 #include <string>
 #include <list>
 #include <mutex>
+#include <thread>
+#include <functional>
 
 using namespace std;
 
@@ -12,13 +15,13 @@ private:
     SOCKET serverSocket, acceptSocket;
     int port = 55555;
     bool online = false;
+    const char* name = "USER"; //Host's name
     struct User {
         SOCKET socket;
-        string name;
+        const char* name = "USER";
         thread listen;
-        User(SOCKET s, string n) {
+        User(SOCKET s) {
             socket = s;
-            name = n;
         }
     };
     list<User> users;
@@ -27,7 +30,11 @@ private:
 
     bool setup();
     void recieveMessage(User& sender);
+    void hostMessanger();
+    void sendMessage(char*);
+
+    function<void(string)> toManager; //Callback
 public:
-    void start();
+    void start(function<void(string)>);
     void end();
 };
