@@ -158,6 +158,7 @@ void Host::recieveMessage(User& sender) {
 void Host::sendMessage(char* message, unsigned short msgSize) {
     usersMutex.lock();
     for(User& user : users) { //Note: There is no error checking here.
+        send(user.socket, (char*)&msgSize, sizeof(msgSize), 0);
         send(user.socket, message, strlen(message) + 1, 0);
     }
     usersMutex.unlock();

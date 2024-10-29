@@ -90,29 +90,26 @@ void Client::sendMessage(char* message, unsigned short msgSize) {
 
 //Recieving message from server.
 void Client::recieveMessage() {
-    char buffer[220];
-    int32_t msgSize;
-    char sizeBuffer[sizeof(msgSize)];
-    int byteCount, bytesRecieved;
+    char* msg;
+    char* msgwName;
+    unsigned short msgSize;
+    int byteCount;
 
     while(online) {
-        bytesRecieved = 0;
+        //Get size of message
+        recv(mySocket, (char*)&msgSize, sizeof(msgSize), 0); //Note: There is no error checking to see if it is numerical.
 
-        //Read data up to 200. Clip rest of data (stand-in).
-        byteCount = recv(mySocket, buffer, 200, 0);
-        if(byteCount > 0) {
-            bytesRecieved += byteCount;
-        } else {
-            break;
-        }
-
+        //Recieve full message
+        msg = new char[msgSize];
+        byteCount = recv(mySocket, msg, msgSize, 0);
 
         if(byteCount > 0) {
-            if(strcmp(buffer, "end") == 0) {
+            if(strcmp(msg, "end") == 0) {
                 end();
-            } else {
-                toManager(buffer);
+                break;
             }
+
+            toManager(msg);
         }
     }
 }
