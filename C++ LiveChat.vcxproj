@@ -130,15 +130,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="Manager.cpp" />
-    <ClCompile Include="Client.cpp" />
-    <ClCompile Include="Connection.cpp" />
+    <ClCompile Include="Source/main.cpp" />
+    <ClCompile Include="Source/Manager.cpp" />
+    <ClCompile Include="Source/Client.cpp" />
+    <ClCompile Include="Source/Host.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Manager.h" />
-    <ClInclude Include="Client.h" />
-    <ClCompile Include="Connection.h" />
+    <ClInclude Include="Headers/Connection.h" />
+    <ClInclude Include="Headers/Manager.h" />
+    <ClInclude Include="Headers/Client.h" />
+    <ClCompile Include="Headers/Host.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

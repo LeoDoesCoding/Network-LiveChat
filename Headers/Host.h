@@ -1,20 +1,11 @@
 #pragma once
-#include <iostream>
-#include <winsock2.h>
-#include <string>
-#include <list>
+#include "Connection.h"
 #include <mutex>
-#include <thread>
-#include <functional>
-
-using namespace std;
+#include <list>
 
 
-class Connection {
+class Host : public Connection {
 private:
-    SOCKET serverSocket, acceptSocket;
-    int port = 55555;
-    bool online = false;
     const char* name = "USER"; //Host's name
     struct User {
         SOCKET socket;
@@ -29,12 +20,10 @@ private:
     mutex usersMutex;
 
     bool setup();
-    void recieveMessage(User& sender);
+    void sendMessage(char*, unsigned short) override;
+    void recieveMessage(User&);
     void hostMessanger();
-    void sendMessage(char*);
-
-    function<void(string)> toManager; //Callback
+    void end() override;
 public:
     void start(function<void(string)>);
-    void end();
 };

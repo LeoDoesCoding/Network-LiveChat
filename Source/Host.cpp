@@ -1,8 +1,8 @@
-//Maintains connection to client
-#include "Connection.h"
-using namespace std;
+//Hosts server
+#include "../Headers/Host.h"
 
-void Connection::start(function<void(string)> callback) {
+
+void Host::start(function<void(string)> callback) {
     toManager = callback;
 
     //Setup connection
@@ -13,13 +13,14 @@ void Connection::start(function<void(string)> callback) {
         end();
     }
 
-    thread host(&Connection::hostMessanger, this);
+    //Host messanger thread start
+    thread host(&Host::hostMessanger, this);
 
     toManager("-----");
 
     //Setup listening
     toManager("Listen start: ");
-    if(listen(serverSocket, 1) == SOCKET_ERROR) {
+    if(listen(mySocket, 1) == SOCKET_ERROR) {
         toManager("Listen(): Error listening on socket");
         end();
     } else {
@@ -30,7 +31,7 @@ void Connection::start(function<void(string)> callback) {
     while(online) {
         //Wait until a connection is made, attempt request acceptence.
         toManager("Listening for a new connection...");
-        acceptSocket = accept(serverSocket, NULL, NULL);
+        acceptSocket = accept(mySocket, NULL, NULL);
         if(acceptSocket == INVALID_SOCKET) {
             toManager("Accept failed: " + WSAGetLastError());
         } else {
@@ -38,16 +39,14 @@ void Connection::start(function<void(string)> callback) {
             users.push_back(User(acceptSocket)); //All users arbuitarily names "USER".
             usersMutex.unlock();
             toManager("New client added.");
-            users.back().listen = thread(&Connection::recieveMessage, this, std::ref(users.back()));
+            users.back().listen = thread(&Host::recieveMessage, this, std::ref(users.back()));
         }
     }
     host.join();
 }
 
-//Note: Host is present in chat, however does not have their own User struct (no connection to own port).
-
 //Sets up connection in preparation for recieving clients.
-bool Connection::setup() {
+bool Host::setup() {
     //Settup Winsock
     WSADATA wsaData;
     int wsaerr;
@@ -64,11 +63,11 @@ bool Connection::setup() {
     }
 
     //Settup socket
-    serverSocket = INVALID_SOCKET;
-    serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    mySocket = INVALID_SOCKET;
+    mySocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     //Check socket is setup
-    if(serverSocket == INVALID_SOCKET) {
+    if(mySocket == INVALID_SOCKET) {
         toManager("Error at socket()");
         return false;
     } else {
@@ -80,9 +79,9 @@ bool Connection::setup() {
     service.sin_family = AF_INET;
     service.sin_addr.s_addr = INADDR_ANY;
     service.sin_port = htons(port);
-    if(::bind(serverSocket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR) {
+    if(::bind(mySocket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR) {
         toManager("Bind() failed: ");
-        closesocket(serverSocket);
+        closesocket(mySocket);
         return false;
     } else {
         toManager("Bind() OK!");
@@ -94,35 +93,38 @@ bool Connection::setup() {
 }
 
 //THREAD: Host messaging
-void Connection::hostMessanger() {
+void Host::hostMessanger() {
     string inpStr;
     char* input;
-    int bufferSize;
+    unsigned short bufferSize;
+    cin.ignore();
 
     while(online) {
         getline(cin, inpStr);
 
         if(cin.fail()) {
-            cerr << "Input error. Exiting." << endl;
+            toManager("Input error. Exiting.");
+            end();
             break;
         }
 
         if(inpStr == "end") {
+            end();
             break;
         }
 
-        bufferSize = inpStr.length() + strlen(name) + 3;
+        bufferSize = inpStr.length() + strlen(name) + 3; //+3 for ": " and null-terminator
         input = new char[bufferSize];
         snprintf(input, bufferSize, "%s: %s", name, inpStr.c_str());
 
-        sendMessage(input);
+        sendMessage(input, bufferSize);
     }
 }
 
 
 //THREAD: For each client, wait for messages and send to all clients.
-void Connection::recieveMessage(User& sender) {
-    cout << "Waiting to recieve from client " << sender.name << "... " << endl;
+void Host::recieveMessage(User& sender) {
+    toManager("Waiting to recieve from client " + string(sender.name)+ "... ");
     char* msg;
     char* msgwName;
     unsigned short msgSize;
@@ -139,22 +141,21 @@ void Connection::recieveMessage(User& sender) {
         if(byteCount > 0) {
             if(strcmp(msg, "end") == 0) {
                 end();
-            } else {
-                cout << msg << endl;
-                msgSize += strlen(sender.name) + 2;
-                msgwName = new char[msgSize];
-                snprintf(msgwName, msgSize, "%s: %s", sender.name, msg);
-                toManager(msgwName); //CALLBACK
-
-                sendMessage(msgwName);
-                toManager("Sent message to clients.");
-                delete[] msg;
+                break;
             }
+            msgSize += strlen(sender.name) + 2;
+            msgwName = new char[msgSize];
+            snprintf(msgwName, msgSize, "%s: %s", sender.name, msg);
+
+            toManager(msgwName);
+            sendMessage(msgwName, msgSize);
+            toManager("Sent message to clients.");
+
         }
     }
 }
 
-void Connection::sendMessage(char* message) {
+void Host::sendMessage(char* message, unsigned short msgSize) {
     usersMutex.lock();
     for(User& user : users) { //Note: There is no error checking here.
         send(user.socket, message, strlen(message) + 1, 0);
@@ -165,8 +166,8 @@ void Connection::sendMessage(char* message) {
 
 
 
-void Connection::end() {
-    cout << "----\nDisconnecitng..." << endl;
+void Host::end() {
+    toManager("----\nDisconnecitng...");
     online = false;
     //Disconnect all clients
     //NOTE: This is for debugging purposes. In practical application, the server should only disconnect all clients if the server is to disconnect.
@@ -176,9 +177,9 @@ void Connection::end() {
     }
     usersMutex.unlock();
 
-    cout << "Disconected clients." << endl;
+    toManager("Disconected clients.");
 
     //Dissconect server
     WSACleanup();
-    cout << "Connection ended." << endl;
+    toManager("Connection ended.");
 }
