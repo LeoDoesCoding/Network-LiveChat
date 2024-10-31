@@ -39,7 +39,8 @@ void Host::start(function<void(string)> callback) {
             users.push_back(User(acceptSocket)); //All users arbuitarily names "USER".
             usersMutex.unlock();
             toManager("New client added.");
-            users.back().listen = thread(&Host::recieveMessage, this, std::ref(users.back()));
+            thread listen(&Host::recieveMessage, this, ref(users.back()));
+            listen.detach();
         }
     }
     host.join();
@@ -108,7 +109,7 @@ void Host::hostMessanger() {
             break;
         }
 
-        if(inpStr == "end") {
+        if(inpStr == "end\0") {
             end();
             break;
         }
@@ -138,22 +139,38 @@ void Host::recieveMessage(User& sender) {
         msg = new char[msgSize];
         byteCount = recv(sender.socket, msg, msgSize, 0);
 
-        if(byteCount > 0) {
-            if(strcmp(msg, "end") == 0) {
-                end();
-                break;
+        if(strcmp(msg, "end\0") == 0 || byteCount <= 0) { //Disconnect user
+            if(online) {
+                msgSize += strlen(sender.name) + 20;
+                msgwName = new char[msgSize];
+                snprintf(msgwName, msgSize, "%s has left the chat.", sender.name);
+                toManager(msgwName);
+                removeUser(sender);
+                sendMessage(msgwName, msgSize);
             }
-            msgSize += strlen(sender.name) + 2;
-            msgwName = new char[msgSize];
-            snprintf(msgwName, msgSize, "%s: %s", sender.name, msg);
-
-            toManager(msgwName);
-            sendMessage(msgwName, msgSize);
-            toManager("Sent message to clients.");
-
+            return;
         }
+
+        msgSize += strlen(sender.name) + 2;
+        msgwName = new char[msgSize];
+        snprintf(msgwName, msgSize, "%s: %s", sender.name, msg);
+
+        toManager(msgwName);
+        sendMessage(msgwName, msgSize);
+        toManager("Sent message to clients.");
     }
 }
+
+//Erase user
+void Host::removeUser(User& user) {
+    usersMutex.lock();
+    closesocket(user.socket);
+    users.erase(remove_if(users.begin(), users.end(), [&](User& iuser) {
+        return iuser == user;
+        }), users.end());
+    usersMutex.unlock();
+}
+
 
 void Host::sendMessage(char* message, unsigned short msgSize) {
     usersMutex.lock();
@@ -170,10 +187,12 @@ void Host::sendMessage(char* message, unsigned short msgSize) {
 void Host::end() {
     toManager("----\nDisconnecitng...");
     online = false;
+
     //Disconnect all clients
-    //NOTE: This is for debugging purposes. In practical application, the server should only disconnect all clients if the server is to disconnect.
     usersMutex.lock();
     for(User& user : users) {
+        send(user.socket, "4", 2, 0);
+        send(user.socket, "end\0", 4, 0);
         closesocket(user.socket);
     }
     usersMutex.unlock();

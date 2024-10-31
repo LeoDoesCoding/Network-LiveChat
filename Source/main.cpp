@@ -15,16 +15,12 @@ int main() {
 
 	switch(choice) {
 	case 1:
-		Manager::start();
+		Manager::startHost();
 		break;
 	case 2:
-		wstring IP;
-		cout << "Please enter the IP to connect to: "; //Self note: Read IP, ENTER IP NOT PORT YOU ABSOLUTE WALNUT
-		wcin >> IP;
-		Manager::start(IP);
+		Manager::startClient();
 		break;
 	}
 
-	system("pause");
 	return 0;
 }

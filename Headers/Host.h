@@ -10,19 +10,23 @@ private:
     struct User {
         SOCKET socket;
         const char* name = "USER";
-        thread listen;
         User(SOCKET s) {
             socket = s;
         }
+
+        bool operator==(const User& other) const {
+            return socket == other.socket;
+        }
     };
+    thread host;
     list<User> users;
-    list<thread> threads;
     mutex usersMutex;
 
     bool setup();
     void sendMessage(char*, unsigned short) override;
     void recieveMessage(User&);
     void hostMessanger();
+    void removeUser(User&);
     void end() override;
 public:
     void start(function<void(string)>);

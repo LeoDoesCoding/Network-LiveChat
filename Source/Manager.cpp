@@ -2,15 +2,21 @@
 
 
 //Host
-void Manager::start() {
+void Manager::startHost() {
 	Host connection;
 	connection.start(displayMessage);
 }
 
 //Client
-void Manager::start(const wstring IP) {
+void Manager::startClient() {
+	wstring IP;
 	Client connection;
-	connection.start(displayMessage, IP);
+	while(true) {
+		cout << "Please enter the IP to connect to: "; //Self note: Read IP, ENTER IP NOT PORT YOU ABSOLUTE WALNUT
+		wcin >> IP;
+		if(connection.start(displayMessage, IP)) { break; }
+		cout << "Cannot make connection." << endl;
+	}	
 }
 
 void Manager::displayMessage(string message) {

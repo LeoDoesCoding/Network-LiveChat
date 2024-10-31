@@ -10,5 +10,5 @@ private:
 	void recieveMessage();
 	void end() override;
 public:
-	void start(function<void(string)>, const wstring IP);
+	bool start(function<void(string)>, const wstring IP);
 };
