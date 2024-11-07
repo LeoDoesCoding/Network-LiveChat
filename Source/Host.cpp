@@ -14,7 +14,7 @@ void Host::start(function<void(string)> callback) {
     }
 
     //Host messanger thread start
-    thread host(&Host::hostMessanger, this);
+    thread host(&Host::handleInput, this);
 
     toManager("-----");
 
@@ -93,33 +93,17 @@ bool Host::setup() {
     return true;
 }
 
-//THREAD: Host messaging
-void Host::hostMessanger() {
-    string inpStr;
-    char* input;
+
+//Called by handleInput()
+void Host::prepMsg(string msg) {
     unsigned short bufferSize;
-    cin.ignore();
+    char* input;
+    
+    bufferSize = msg.length() + getName().length() + 3; //+3 for ": " and null-terminator
+    input = new char[bufferSize];
+    snprintf(input, bufferSize, "%s: %s", getName().data(), msg.c_str());
 
-    while(online) {
-        getline(cin, inpStr);
-
-        if(cin.fail()) {
-            toManager("Input error. Exiting.");
-            end();
-            break;
-        }
-
-        if(inpStr == "end\0") {
-            end();
-            break;
-        }
-
-        bufferSize = inpStr.length() + strlen(name) + 3; //+3 for ": " and null-terminator
-        input = new char[bufferSize];
-        snprintf(input, bufferSize, "%s: %s", name, inpStr.c_str());
-
-        sendMessage(input, bufferSize);
-    }
+    sendMessage(input, bufferSize);
 }
 
 
@@ -141,23 +125,29 @@ void Host::recieveMessage(User& sender) {
 
         if(strcmp(msg, "end\0") == 0 || byteCount <= 0) { //Disconnect user
             if(online) {
-                msgSize += strlen(sender.name) + 20;
+                msgSize += sender.name.length() + 20;
                 msgwName = new char[msgSize];
                 snprintf(msgwName, msgSize, "%s has left the chat.", sender.name);
-                toManager(msgwName);
+                if (ready) toManager(msgwName);
                 removeUser(sender);
                 sendMessage(msgwName, msgSize);
             }
             return;
+        } else if(strcmp(msg, "/setname\0") == 0) {
+            recv(sender.socket, (char*)&msgSize, sizeof(msgSize), 0);
+            msg = new char[msgSize];
+            recv(sender.socket, msg, msgSize, 0);
+            sender.name = msg;
+            continue;
         }
 
-        msgSize += strlen(sender.name) + 2;
+        msgSize += sender.name.length() + 2;
         msgwName = new char[msgSize];
-        snprintf(msgwName, msgSize, "%s: %s", sender.name, msg);
+        snprintf(msgwName, msgSize, "%s: %s", sender.name.c_str(), msg);
 
-        toManager(msgwName);
+        if(ready) toManager(msgwName);
         sendMessage(msgwName, msgSize);
-        toManager("Sent message to clients.");
+        if(ready) toManager("Sent message to clients.");
     }
 }
 
@@ -182,6 +172,11 @@ void Host::sendMessage(char* message, unsigned short msgSize) {
     delete[] message;
 }
 
+
+//Handle config interaction
+bool Host::configSet(short choice) {
+    return true;
+}
 
 
 void Host::end() {

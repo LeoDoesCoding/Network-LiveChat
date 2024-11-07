@@ -49,40 +49,26 @@ bool Client::start(function<void(string)> callback, const wstring IP) {
     online = true;
     toManager("Successfully connected. You may now send messages.");
 
-    //Recieve message thread start
-    thread client(&Client::recieveMessage, this);
+    //Recieve and send message thread start
+    thread sendMsg(&Client::handleInput, this);
+    thread recMsg(&Client::recieveMessage, this);
 
-    //Send messages
-    string inpStr;
-    char* input;
-    unsigned short bufferSize;
-    cin.ignore();
-
-    while(online) {
-        getline(cin, inpStr);
-
-        if(cin.fail()) {
-            toManager("Input error. Exiting.");
-            end();
-            break;
-        }
-
-        bufferSize = inpStr.size()+1; //+1 for null-terminator
-        input = new char[bufferSize];
-        strcpy_s(input, bufferSize, inpStr.c_str()); //c_str adds null-terminator
-
-        sendMessage(input, bufferSize);
-
-        //User requests to terminate connection
-        if(inpStr == "end\0") {
-            closesocket(mySocket);
-            toManager("You have left the room.");
-            break;
-        }
-    }
-
-    client.join();
+    sendMsg.join();
+    recMsg.join();
     return true;
+}
+
+//Called by handleInput()
+void Client::prepMsg(string msg) {
+    unsigned short bufferSize;
+    char* input;
+
+    bufferSize = msg.size() + 1; //+1 for null-terminator
+    input = new char[bufferSize];
+    strcpy_s(input, bufferSize, msg.c_str()); //c_str adds null-terminator
+
+    sendMessage(input, bufferSize);
+    delete[] input;
 }
 
 
@@ -101,7 +87,6 @@ void Client::sendMessage(char* message, unsigned short msgSize) {
         toManager("There was an issue sending the message.");
         end();
     }
-    delete[] message;
 }
 
 //Recieving message from server.
@@ -139,6 +124,16 @@ void Client::recieveMessage() {
             }
         }
     }
+}
+
+
+bool Client::configSet(short choice) {
+    if(choice == 1) {
+        string c = "/setname";
+        sendMessage(c.data(), 9);
+        sendMessage(const_cast<char*>(getName().c_str()), getName().length());
+    }
+    return true;
 }
 
 
