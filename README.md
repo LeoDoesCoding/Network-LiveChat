@@ -18,10 +18,10 @@ Establishing sockets code from Nicholas Day. Remaining code is original.
 	- Invalid connect option
 	- Invalid IP format
  - Connection handling:
-	Client
+	- Client
 		- Winsoc, socket and IP/port connection handling
 		- Handles server connection loss
-	Server
+	- Server
 		- Winsoc, socket and IP/port connection handling
 		- Handles expected user disconnect (ie, recieves "end")
 		- Handles unexpected user disconnect
