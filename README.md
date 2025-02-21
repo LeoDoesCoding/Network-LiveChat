@@ -1,19 +1,23 @@
 # Network-LiveChat
+Console application allowing for users to communicate over TCP connection.
+
 Establishing sockets code from Nicholas Day. Remaining code is original.
 
 ## Currently present:
- - Establishes server/client(s) connection.
- - All server/client connections sets up a new user.
+ - Establishinng server/client(s) connection.
+ - Each connecting server/client sets up a new user. Host is both a user and server.
  - User(s) can send messages to server.
  - User(s) can recieve messages from other users (through server).
- - Messages do not have an upper cap.
- - User can enter "end" to end their connection to the sever (same as closing application).
+ - Messages have an upper cap of 2 bytes.
+ - Commands:
+	- /end: Severs the user's connection.
+	- /config: Enters configuration mode.
+ - Config mode:
+	- Name: User can change their name.
+	- Server setting:
+		- Log mode: Currently inaffective. See: todo.
+	- Users will not be able to send or view messages sent while in config mode.
  - Connection error checking and feedback.
- - User can enter config mode:
-	- User can change their name
-	- User can exit config mode with "/quit"
-	- User will not be able to view messages while in this mode.
- - User can change their name.
  - Input checking:
 	- Invalid connect option
 	- Invalid IP format
@@ -28,8 +32,9 @@ Establishing sockets code from Nicholas Day. Remaining code is original.
  
 ## Todo:
  - config
-	- Log mode (both client and server)
- Server
+	- Log modes: How/if the chat is stored during a session.
+ - Server
 	- Handling (and rejecting) connections not via the application
 	- (Deppendant on feesability) run chat sepperate from connection log
  - Testing + cleanup
+ - GUI?

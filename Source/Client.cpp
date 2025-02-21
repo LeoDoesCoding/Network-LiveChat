@@ -58,22 +58,9 @@ bool Client::start(function<void(string)> callback, const wstring IP) {
     return true;
 }
 
-//Called by handleInput()
-void Client::prepMsg(string msg) {
-    unsigned short bufferSize;
-    char* input;
-
-    bufferSize = msg.size() + 1; //+1 for null-terminator
-    input = new char[bufferSize];
-    strcpy_s(input, bufferSize, msg.c_str()); //c_str adds null-terminator
-
-    sendMessage(input, bufferSize);
-    delete[] input;
-}
-
 
 //Sends message to sever
-void Client::sendMessage(char* message, unsigned short msgSize) {
+void Client::sendConverted(char* message, unsigned short msgSize) {
     //Send length
     send(mySocket, (char*)&msgSize, sizeof(msgSize), 0);
 
@@ -89,10 +76,11 @@ void Client::sendMessage(char* message, unsigned short msgSize) {
     }
 }
 
+
 //Recieving message from server.
 void Client::recieveMessage() {
     char* msg;
-    char* msgwName;
+    string msgStr;
     unsigned short msgSize;
     int byteCount;
 
@@ -102,15 +90,13 @@ void Client::recieveMessage() {
 
         //Recieve full message
         if(online) {
-            msg = new char[msgSize];
+            msg = new char[msgSize+1];
+            msg[msgSize] = '\0';
             byteCount = recv(mySocket, msg, msgSize, 0);
+            msgStr = string(msg);
 
             if(byteCount > 0) {
-                if(strcmp(msg, "\0") == 0) {
-                    return;
-                }
-
-                if(strcmp(msg, "end\0") == 0) {
+                if(strcmp(msg, "/end") == 0) {
                     toManager("Server has disconnected.");
                     end();
                     break;
@@ -129,10 +115,11 @@ void Client::recieveMessage() {
 
 bool Client::configSet(short choice) {
     if(choice == 1) {
-        string c = "/setname";
-        sendMessage(c.data(), 9);
-        sendMessage(const_cast<char*>(getName().c_str()), getName().length());
+        sendMessage("/setname");
+        sendMessage(getName());
     }
+
+    sendMessage("/REQUESTLOG");
     return true;
 }
 

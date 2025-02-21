@@ -1,6 +1,6 @@
 #include "../Headers/Connection.h"
 
-//Handle shared class commands
+//Recieves user input + shared responses.
 void Connection::handleInput() {
     string inpStr;
     cin.ignore();
@@ -14,16 +14,18 @@ void Connection::handleInput() {
             break;
         }
 
-        if(inpStr == "end\0") {
+        if(inpStr == "/end") {
             end();
             break;
-        } else if(inpStr == "/config\0") {
+        } else if(inpStr == "/config") {
             ready = false;
             config();
             continue;
+        } else {
+            inpStr = getName() + ": " + inpStr ;
         }
 
-        prepMsg(inpStr);
+        sendMessage(inpStr);
     }
 }
 
@@ -37,34 +39,51 @@ void Connection::config() {
         toManager(to_string(i) + ". " + option.first);
         i++;
     }
-    toManager("Or '/quit' to return to chat room.");
+    toManager("Or '/back' to return to chat room.");
 
     while(true) {
         cin >> choice;
+
         if(!cin.fail()) {
-            if(choice == "1") {
-                char* input;
-                string c;
+            int choiceInt;
+            try {
+                choiceInt = stoi(choice);
+            } catch(const invalid_argument& e) { //Non-integer input
+                if(choice == "/back") {
+                    system("CLS");
+                    toManager("Returned to chat room.");
+                    ready = true;
+                    return;
+                }
+                toManager("Invalid option given. Please enter a valid option: ");
+                continue;
+            }
+
+            //Integer input
+            if(choiceInt == 1) { //Name change
+                string input;
                 string old = getName();
-                short size;
                 toManager("Set text for new name: ");
-                cin >> c;
-                options[0] = make_pair("Name", c);
-                toManager("Name has been changed to " + getName() + ".");
-                size = old.length() + 29 + getName().length();
-                input = new char[size];
-                snprintf(input, size, "%s has changed their name to %s.", old.data(), getName().c_str());
-                sendMessage(input, size);
-            } else if(choice == "/quit") {
-                system("CLS");
-                toManager("Returned to chat room.");
-                ready = true;
-                break;
-            } else {
+                cin >> input;
+                options[0] = make_pair("Name", input);
+                input = old + "has changed their name to " + getName() + ".";
+                toManager(input);
+                sendMessage(input);
+
+            } else if(choiceInt > options.size() && choiceInt <= 0) { //Invalid option (beyond range of options)
                 toManager("Invalid option given. Please enter a valid option: ");
                 continue;
             }
             configSet(stoi(choice));
+            break;
         }
     }
+    config();
+}
+
+void Connection::sendMessage(string message) {
+    int msgSize = message.length() +1;
+    char* msg = new char[message.length() +1];
+    strcpy_s(msg, message.length()+1, message.c_str());
+    sendConverted(msg, msgSize);
 }

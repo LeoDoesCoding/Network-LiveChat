@@ -6,6 +6,7 @@
 #include <functional>
 #include <vector>
 #include <variant>
+#include <algorithm> 
 
 using namespace std;
 
@@ -19,16 +20,16 @@ protected:
 
     void handleInput();
     void config();
+    void sendMessage(string);
 
-    virtual void sendMessage(char*, unsigned short) = 0;
-    virtual void prepMsg(string) = 0;
+    virtual void sendConverted(char*, unsigned short) = 0;
     virtual void end() = 0;
 
     //Config options
     enum LogState { //Server log type
         NOLOG, //No log is kept
-        SERVER, //Server keeps log, client retrives log
-        CLIENT //Client keeps personal log
+        TEMPORARY, //Client keeps personal log (in application)
+        PERSISTANT, //Client keeps personal log (as text file)
     };
     vector<pair<string, variant<string, bool, LogState>>> options; //description, value
     string getName() { return get<string>(options[0].second); }

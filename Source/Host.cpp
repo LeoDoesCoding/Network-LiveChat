@@ -36,7 +36,7 @@ void Host::start(function<void(string)> callback) {
             toManager("Accept failed: " + WSAGetLastError());
         } else {
             usersMutex.lock();
-            users.push_back(User(acceptSocket)); //All users arbuitarily names "USER".
+            users.push_back(User(acceptSocket));
             usersMutex.unlock();
             toManager("New client added.");
             thread listen(&Host::recieveMessage, this, ref(users.back()));
@@ -94,46 +94,33 @@ bool Host::setup() {
 }
 
 
-//Called by handleInput()
-void Host::prepMsg(string msg) {
-    unsigned short bufferSize;
-    char* input;
-    
-    bufferSize = msg.length() + getName().length() + 3; //+3 for ": " and null-terminator
-    input = new char[bufferSize];
-    snprintf(input, bufferSize, "%s: %s", getName().data(), msg.c_str());
-
-    sendMessage(input, bufferSize);
-}
-
-
 //THREAD: For each client, wait for messages and send to all clients.
 void Host::recieveMessage(User& sender) {
     toManager("Waiting to recieve from client " + string(sender.name)+ "... ");
     char* msg;
-    char* msgwName;
+    string msgStr;
     unsigned short msgSize;
     int byteCount;
 
     while(online) {
         //Get size of message
-        recv(sender.socket, (char*)&msgSize, sizeof(msgSize), 0); //Note: There is no error checking to see if it is numerical.
+        recv(sender.socket, (char*)&msgSize, sizeof(msgSize), 0);
 
         //Recieve full message
         msg = new char[msgSize];
+        msg[msgSize] = '\0';
         byteCount = recv(sender.socket, msg, msgSize, 0);
+        msgStr = string(msg);
 
-        if(strcmp(msg, "end\0") == 0 || byteCount <= 0) { //Disconnect user
+        if(msgStr == "/end" || byteCount <= 0) { //Disconnect user
             if(online) {
-                msgSize += sender.name.length() + 20;
-                msgwName = new char[msgSize];
-                snprintf(msgwName, msgSize, "%s has left the chat.", sender.name);
-                if (ready) toManager(msgwName);
+                msgStr = sender.name + " has left the chat.";
+                if (ready) toManager(msgStr);
                 removeUser(sender);
-                sendMessage(msgwName, msgSize);
+                sendMessage(msgStr);
             }
             return;
-        } else if(strcmp(msg, "/setname\0") == 0) {
+        } else if(msgStr == "/setname") {
             recv(sender.socket, (char*)&msgSize, sizeof(msgSize), 0);
             msg = new char[msgSize];
             recv(sender.socket, msg, msgSize, 0);
@@ -141,13 +128,8 @@ void Host::recieveMessage(User& sender) {
             continue;
         }
 
-        msgSize += sender.name.length() + 2;
-        msgwName = new char[msgSize];
-        snprintf(msgwName, msgSize, "%s: %s", sender.name.c_str(), msg);
-
-        if(ready) toManager(msgwName);
-        sendMessage(msgwName, msgSize);
-        if(ready) toManager("Sent message to clients.");
+        if(ready) toManager(msgStr);
+        sendMessage(msgStr);
     }
 }
 
@@ -161,20 +143,66 @@ void Host::removeUser(User& user) {
     usersMutex.unlock();
 }
 
-
-void Host::sendMessage(char* message, unsigned short msgSize) {
+//To be send by Connection::sendMessage
+void Host::sendConverted(char* message, unsigned short msgSize) {
     usersMutex.lock();
     for(User& user : users) { //Note: There is no error checking here.
         send(user.socket, (char*)&msgSize, sizeof(msgSize), 0);
-        send(user.socket, message, strlen(message) + 1, 0);
+        int byteCount = send(user.socket, message, strlen(message) + 1, 0);
+        if(byteCount < 0) {
+            int errCode = WSAGetLastError();
+            toManager("Unable to send to client " + user.name + ".");
+            removeUser(user);
+        }
     }
     usersMutex.unlock();
     delete[] message;
+    if(ready) toManager("Sent message to clients.");
 }
 
 
 //Handle config interaction
 bool Host::configSet(short choice) {
+    if(choice == 2) {
+        system("CLS");
+        string choice2;
+        toManager("Current log mode: " + logString());
+        toManager("To change log mode, please enter a number for one of the following options:\n1. No log\n2. Temporary log \n3. Text-file log\n/help\n/back");
+
+        while(true) {
+            cin >> choice2;
+            if(choice2 == "1") {
+                options[1].second = NOLOG;
+                toManager("Log mode has been changed to " + logString());
+                system("pause");
+                break;
+            } else if(choice2 == "2") {
+                options[1].second = TEMPORARY;
+                toManager("Log mode has been changed to " + logString());
+                system("pause");
+                break;
+            } else if(choice2 == "3") {
+                options[1].second = PERSISTANT;
+                toManager("Log mode has been changed to " + logString());
+                system("pause");
+                break;
+            } else if(choice2 == "/help") {
+                system("CLS");
+                toManager("Log mode dictates if and how the chat is kept.");
+                toManager("No log: No log is being kept of the chat.\n        If a user enters option mode or quits the room, they will lose access to the previous messages.");
+                toManager("Temporary log: A local log of chat is kept as a variable and users joining the room can view the whole chat session.\n               Quitting the chat will erase the chat session.");
+                toManager("Text-file log: A local log of chat is kept as a text file and users joining the room can view the whole chat session.");
+                system("pause");
+                system("CLS");
+                toManager("Current log mode: " + logString());
+                toManager("To change log mode, please enter a number for one of the following options:\n1. No log\n2. Temporary log \n3. Text-file log\n/help\n/back");
+                continue;
+            } else if(choice2 == "/back") {
+                return true;
+            }
+            toManager("Invalid option given. Please enter a valid option: ");
+        }
+    }
     return true;
 }
 
@@ -186,8 +214,8 @@ void Host::end() {
     //Disconnect all clients
     usersMutex.lock();
     for(User& user : users) {
-        send(user.socket, "4", 2, 0);
-        send(user.socket, "end\0", 4, 0);
+        send(user.socket, "5", 2, 0);
+        send(user.socket, "/end\0", 4, 0);
         closesocket(user.socket);
     }
     usersMutex.unlock();
