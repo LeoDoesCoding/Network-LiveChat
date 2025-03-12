@@ -25,10 +25,22 @@ void Connection::handleInput() {
             inpStr = getName() + ": " + inpStr ;
         }
 
+        //Log handling
+        if(getLogState() == PERSISTANT) {
+            if(!logFile.is_open()) {
+                ofstream logFile(logName, ios::app);
+            }
+            fileMutex.lock();
+            logFile << inpStr << endl;
+            logFile.flush();
+            fileMutex.unlock();
+        } else if(getLogState() == TEMPORARY) {
+            log += inpStr + "\n";
+        }
+
         sendMessage(inpStr);
     }
 }
-
 
 void Connection::config() {
     string choice;
@@ -52,6 +64,22 @@ void Connection::config() {
                 if(choice == "/back") {
                     system("CLS");
                     toManager("Returned to chat room.");
+                    cin.ignore();
+                    switch(getLogState()) {
+                    case TEMPORARY:
+                        cout << log;
+                        break;
+                    case PERSISTANT:
+                        fileMutex.lock();
+                        ifstream readLog(logName);
+                        string text;
+                        while(getline(readLog, text)) {
+                            toManager(text);
+                        }
+                        readLog.close();
+                        fileMutex.unlock();
+                        break;
+                    }
                     ready = true;
                     return;
                 }
@@ -66,10 +94,58 @@ void Connection::config() {
                 toManager("Set text for new name: ");
                 cin >> input;
                 options[0] = make_pair("Name", input);
-                input = old + "has changed their name to " + getName() + ".";
+                input = old + " has changed their name to " + getName() + ".";
                 toManager(input);
                 sendMessage(input);
 
+            } else if (choiceInt == 2) {
+                system("CLS");
+                string choice2;
+
+                while(true) {
+                    toManager("Current log mode: " + logString());
+                    toManager("To change log mode, please enter a number for one of the following options:\n1. No log\n2. Temporary log \n3. Text-file log\nhelp\n/back");
+                    cin >> choice2;
+                    if(choice2 == "1") {
+                        options[1].second = NOLOG;
+                        toManager("Log mode has been changed to " + logString() + ".");
+                        logFile.close();
+                        system("pause");
+                        break;
+                    } else if(choice2 == "2") {
+                        options[1].second = TEMPORARY;
+                        toManager("Log mode has been changed to " + logString() + ".");
+                        logFile.close();
+                        system("pause");
+                        break;
+                    } else if(choice2 == "3") {
+                        options[1].second = PERSISTANT;
+                        toManager("Log mode has been changed to " + logString() + ", with log file " + logName + ".");
+                        logFile.open(logName, ios::app);
+                        system("pause");
+                        break;
+                    /* } else if(choice2 == "4") {
+                        options[1].second = SERVER;
+                        toManager("Log mode has been changed to " + logString());
+                        logFile.close();
+                        system("pause");
+                        break;*/
+                    } else if(choice2 == "/help") {
+                        system("CLS");
+                        toManager("Log mode dictates if and how the chat is kept.");
+                        toManager("No log: No log is being kept of the chat.\n        Leaving the chat room or entering opotions mode erases the chat for this user.");
+                        toManager("Temporary log: A local log of chat is kept as a variable.\n               Quitting the chat will erase the chat session.");
+                        toManager("Text-file log: A local log of chat is kept as a text file and users joining the room can view the whole chat session.");
+                        //toManager("Server: Retrives log from the server when joining the chat or exiting options mode. If the server is not keeping a log, no chat is retrived.");
+                        system("pause");
+                        system("CLS");
+                        continue;
+                    } else if(choice2 == "/back") {
+                        break;
+                    }
+                    system("CLS");
+                    toManager("Invalid option given. Please enter a valid option: ");
+                    }
             } else if(choiceInt > options.size() && choiceInt <= 0) { //Invalid option (beyond range of options)
                 toManager("Invalid option given. Please enter a valid option: ");
                 continue;
@@ -85,5 +161,6 @@ void Connection::sendMessage(string message) {
     int msgSize = message.length() +1;
     char* msg = new char[message.length() +1];
     strcpy_s(msg, message.length()+1, message.c_str());
+
     sendConverted(msg, msgSize);
 }

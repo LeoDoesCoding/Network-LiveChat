@@ -4,6 +4,7 @@
 
 void Host::start(function<void(string)> callback) {
     toManager = callback;
+    options[0] = (make_pair("Name", string("HOST")));
 
     //Setup connection
     if(setup()) {
@@ -26,6 +27,7 @@ void Host::start(function<void(string)> callback) {
     } else {
         toManager("listen() is OK.");
     }
+
 
     //Listen for clients
     while(online) {
@@ -128,6 +130,16 @@ void Host::recieveMessage(User& sender) {
             continue;
         }
 
+        //Log handling
+        if(getLogState() == PERSISTANT) {
+            fileMutex.lock();
+            logFile << msgStr << endl;
+            logFile.flush();
+            fileMutex.unlock();
+        } else if(getLogState() == TEMPORARY) {
+            log += msgStr + "\n";
+        }
+
         if(ready) toManager(msgStr);
         sendMessage(msgStr);
     }
@@ -163,46 +175,6 @@ void Host::sendConverted(char* message, unsigned short msgSize) {
 
 //Handle config interaction
 bool Host::configSet(short choice) {
-    if(choice == 2) {
-        system("CLS");
-        string choice2;
-        toManager("Current log mode: " + logString());
-        toManager("To change log mode, please enter a number for one of the following options:\n1. No log\n2. Temporary log \n3. Text-file log\n/help\n/back");
-
-        while(true) {
-            cin >> choice2;
-            if(choice2 == "1") {
-                options[1].second = NOLOG;
-                toManager("Log mode has been changed to " + logString());
-                system("pause");
-                break;
-            } else if(choice2 == "2") {
-                options[1].second = TEMPORARY;
-                toManager("Log mode has been changed to " + logString());
-                system("pause");
-                break;
-            } else if(choice2 == "3") {
-                options[1].second = PERSISTANT;
-                toManager("Log mode has been changed to " + logString());
-                system("pause");
-                break;
-            } else if(choice2 == "/help") {
-                system("CLS");
-                toManager("Log mode dictates if and how the chat is kept.");
-                toManager("No log: No log is being kept of the chat.\n        If a user enters option mode or quits the room, they will lose access to the previous messages.");
-                toManager("Temporary log: A local log of chat is kept as a variable and users joining the room can view the whole chat session.\n               Quitting the chat will erase the chat session.");
-                toManager("Text-file log: A local log of chat is kept as a text file and users joining the room can view the whole chat session.");
-                system("pause");
-                system("CLS");
-                toManager("Current log mode: " + logString());
-                toManager("To change log mode, please enter a number for one of the following options:\n1. No log\n2. Temporary log \n3. Text-file log\n/help\n/back");
-                continue;
-            } else if(choice2 == "/back") {
-                return true;
-            }
-            toManager("Invalid option given. Please enter a valid option: ");
-        }
-    }
     return true;
 }
 

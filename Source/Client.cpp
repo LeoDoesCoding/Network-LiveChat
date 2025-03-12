@@ -4,6 +4,7 @@
 
 bool Client::start(function<void(string)> callback, const wstring IP) {
     toManager = callback;
+    options[0] = (make_pair("Name", string("USER")));
 
     //Settup Winsock
     WSADATA wsaData;
@@ -108,6 +109,17 @@ void Client::recieveMessage() {
                 toManager("Server has disconnected.");
                 end();
             }
+
+            //Log handling
+            if(getLogState() == PERSISTANT) {
+                fileMutex.lock();
+                logFile.seekp(0, ios::end);
+                logFile << msgStr << endl;
+                logFile.flush();
+                fileMutex.unlock();
+            } else if(getLogState() == TEMPORARY) {
+                log += msgStr + "\n";
+            }
         }
     }
 }
@@ -119,7 +131,7 @@ bool Client::configSet(short choice) {
         sendMessage(getName());
     }
 
-    sendMessage("/REQUESTLOG");
+    //sendMessage("/REQUESTLOG");
     return true;
 }
 

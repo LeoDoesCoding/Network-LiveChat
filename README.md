@@ -14,8 +14,10 @@ Establishing sockets code from Nicholas Day. Remaining code is original.
 	- /config: Enters configuration mode.
  - Config mode:
 	- Name: User can change their name.
-	- Server setting:
-		- Log mode: Currently inaffective. See: todo.
+	- Log mode: User can change whether/how a log is kept of the chat. These include:
+		- No log: No log is being kept of the chat. Leaving the chat room or entering opotions mode erases the chat for the user.
+		- Temporary log: A local log of chat is kept as a variable. Quitting the chat will erase the chat session.
+		- Text-file log: A local log of chat is kept as a text file.
 	- Users will not be able to send or view messages sent while in config mode.
  - Connection error checking and feedback.
  - Input checking:
@@ -32,7 +34,8 @@ Establishing sockets code from Nicholas Day. Remaining code is original.
  
 ## Todo:
  - config
-	- Log modes: How/if the chat is stored during a session.
+	- Exchange data when switching between temporary <--> persistant.
+	- Config -> log mode -> server: (client only) requests server for the log when exiting options mode.
  - Server
 	- Handling (and rejecting) connections not via the application
 	- (Deppendant on feesability) run chat sepperate from connection log
